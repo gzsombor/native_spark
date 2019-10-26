@@ -18,7 +18,7 @@ pub enum MapOutputTrackerMessage {
 // starts the server in master node and client in slave nodes. Similar to cache tracker
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MapOutputTracker {
-    is_master: bool,
+    pub is_master: bool,
     server_uris: Arc<RwLock<HashMap<usize, Vec<Option<String>>>>>,
     fetching: Arc<RwLock<HashSet<usize>>>,
     generation: Arc<Mutex<i64>>,

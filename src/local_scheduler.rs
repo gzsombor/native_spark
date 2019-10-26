@@ -48,7 +48,23 @@ impl LocalScheduler {
         threads: usize,
         max_failures: usize,
         master: bool,
-        //        map_output_tracker: MapOutputTracker,
+    ) -> Self {
+        LocalScheduler::new_generic(threads, max_failures, master, env::env.map_output_tracker.clone())
+    }
+
+    fn new_from_map_output_tracker(
+        threads: usize,
+        max_failures: usize,
+        map_output_tracker: MapOutputTracker,
+    ) -> Self {
+        LocalScheduler::new_generic(threads, max_failures, map_output_tracker.is_master, map_output_tracker)
+    }
+
+    fn new_generic(
+        threads: usize,
+        max_failures: usize,
+        master: bool,
+        map_output_tracker: MapOutputTracker,
     ) -> Self {
         //        unimplemented!()
         LocalScheduler {

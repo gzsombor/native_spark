@@ -31,12 +31,12 @@ impl Hosts {
 }
 
 impl Env {
-    pub fn new(master_addr: SocketAddr) -> Self {
+    pub fn new(master: bool, master_addr: SocketAddr) -> Self {
         Env {
-            map_output_tracker: MapOutputTracker::new(*is_master, master_addr.clone()),
+            map_output_tracker: MapOutputTracker::new(master, master_addr.clone()),
             shuffle_manager: ShuffleManager::new(),
             shuffle_fetcher: ShuffleFetcher,
-            cache_tracker: CacheTracker::new(*is_master, master_addr, &the_cache),
+            cache_tracker: CacheTracker::new(master, master_addr, &the_cache),
         }
     }
 }
@@ -61,7 +61,7 @@ lazy_static! {
             .read_to_string(&mut hosts)
             .unwrap_or_else(|_| panic!("Unable to read the file: {}", host_path_string));
         let hosts: Hosts = toml::from_str(&hosts).unwrap_or_else(|_| panic!("Unable to process the {} file in env", host_path_string));
-        Env::new(hosts.master)
+        Env::new(*is_master, hosts.master)
     };
 
     pub static ref local_ip: Ipv4Addr = std::env::var("SPARK_LOCAL_IP")
