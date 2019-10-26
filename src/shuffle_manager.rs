@@ -7,8 +7,10 @@ use actix_web::{
     App,
 };
 use rand::Rng;
+use std::collections::HashMap;
 use std::fs;
 use std::thread;
+use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
 // creates directories and files required for storing shuffle data.  It also creates the file server required for serving files via http request
@@ -17,6 +19,7 @@ pub struct ShuffleManager {
     local_dir: String,
     shuffle_dir: String,
     server_uri: String,
+    shuffle_cache: Arc<RwLock<HashMap<(usize, usize, usize), Vec<u8>>>>,
 }
 
 impl ShuffleManager {
@@ -66,7 +69,12 @@ impl ShuffleManager {
         info!("relative path {}", relative_path);
         info!("local_dir path {}", local_dir);
         info!("shuffle dir path {}", shuffle_dir);
+        let shuffle_cache = Arc::new(RwLock::new(HashMap::new()));
+        let http_server_shuffle_cache = Arc::clone(&shuffle_cache);
+
         thread::spawn(move || {
+            let thread_shuffle_cache = http_server_shuffle_cache;
+
             #[get("/shuffle/{shuffleid}/{inputid}/{reduceid}")]
             fn get_shuffle_data(info: Path<(usize, usize, usize)>) -> Bytes {
                 //                println!("inside get shuffle data in  actix server");
@@ -80,7 +88,7 @@ impl ShuffleManager {
                 //                        .clone()[0]
                 //                );
                 Bytes::from(
-                    &env::shuffle_cache
+                    thread_shuffle_cache
                         .read()
                         .get(&(info.0, info.1, info.2))
                         .unwrap()[..],
@@ -122,6 +130,7 @@ impl ShuffleManager {
             local_dir,
             shuffle_dir,
             server_uri,
+            shuffle_cache,
         };
         info!("shuffle manager inside new {:?}", s);
         s
@@ -137,6 +146,13 @@ impl ShuffleManager {
         let file_path = format!("{}/{}", path, output_id);
         fs::File::create(file_path.clone());
         file_path
+    }
+
+    pub fn put_shuffle_cache(&self, shuffle_id: usize, partition: usize, idx: usize, ser_bytes: Vec<u8>) {
+        self.shuffle_cache
+            .write()
+            .unwrap()
+            .insert((shuffle_id, partition, idx), ser_bytes);
     }
 }
 
