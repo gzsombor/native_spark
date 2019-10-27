@@ -3,7 +3,7 @@ use super::*;
 use actix_web::HttpServer;
 use actix_web::{
     get,
-    web::{Bytes, Path},
+    web::{Bytes, Path, Data},
     App,
 };
 use rand::Rng;
@@ -13,13 +13,16 @@ use std::thread;
 use std::sync::{Arc, RwLock};
 use uuid::Uuid;
 
+type ShuffleCacheType = Arc<RwLock<HashMap<(usize, usize, usize), Vec<u8>>>>;
+
 // creates directories and files required for storing shuffle data.  It also creates the file server required for serving files via http request
 #[derive(Clone, Default, Debug, Serialize, Deserialize)]
 pub struct ShuffleManager {
     local_dir: String,
     shuffle_dir: String,
     server_uri: String,
-    shuffle_cache: Arc<RwLock<HashMap<(usize, usize, usize), Vec<u8>>>>,
+    server_address: String,
+    shuffle_cache: ShuffleCacheType,
 }
 
 impl ShuffleManager {
@@ -65,18 +68,29 @@ impl ShuffleManager {
         info!("server_address {:?}", server_address);
         let relative_path = format!("/spark-local-{}", local_dir_uuid);
         let local_dir_clone = local_dir.clone();
-        let server_address_clone = server_address.clone();
         info!("relative path {}", relative_path);
         info!("local_dir path {}", local_dir);
         info!("shuffle dir path {}", shuffle_dir);
         let shuffle_cache = Arc::new(RwLock::new(HashMap::new()));
-        let http_server_shuffle_cache = Arc::clone(&shuffle_cache);
 
+        let s = ShuffleManager {
+            local_dir,
+            shuffle_dir,
+            server_uri,
+            server_address,
+            shuffle_cache,
+        };
+        info!("shuffle manager inside new {:?}", s);
+        s
+    }
+
+    pub fn start_server(&self) {
+        let http_server_shuffle_cache = Data::new(&self.shuffle_cache);
+        let server_address_clone = self.server_address.clone();
         thread::spawn(move || {
-            let thread_shuffle_cache = http_server_shuffle_cache;
 
             #[get("/shuffle/{shuffleid}/{inputid}/{reduceid}")]
-            fn get_shuffle_data(info: Path<(usize, usize, usize)>) -> Bytes {
+            fn get_shuffle_data((info,cache): (Path<(usize, usize, usize)>, Data<ShuffleCacheType>)) -> Bytes {
                 //                println!("inside get shuffle data in  actix server");
                 //                println!(
                 //                    "bytes inside server {}",
@@ -88,8 +102,9 @@ impl ShuffleManager {
                 //                        .clone()[0]
                 //                );
                 Bytes::from(
-                    thread_shuffle_cache
+                    cache
                         .read()
+                        .unwrap()
                         .get(&(info.0, info.1, info.2))
                         .unwrap()[..],
                 )
@@ -100,7 +115,10 @@ impl ShuffleManager {
                 "Hello world!\r"
             }
             match HttpServer::new(move || {
-                App::new().service(get_shuffle_data).service(no_params)
+                App::new()
+                    .register_data(http_server_shuffle_cache)
+                    .service(get_shuffle_data)
+                    .service(no_params)
                 //                    .service(
                 //                        // static files
                 //                        fserver::Files::new(&relative_path, &local_dir_clone),
@@ -126,14 +144,6 @@ impl ShuffleManager {
                 }
             }
         });
-        let s = ShuffleManager {
-            local_dir,
-            shuffle_dir,
-            server_uri,
-            shuffle_cache,
-        };
-        info!("shuffle manager inside new {:?}", s);
-        s
     }
 
     pub fn get_server_uri(&self) -> String {
