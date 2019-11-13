@@ -63,6 +63,9 @@ impl BoundedMemoryCache {
             CachePutResponse::CachePutSuccess(size)
         }
     }
+    pub fn get_capacity(&self) -> usize {
+        self.max_bytes
+    }
 
     fn ensure_free_space(&self, dataset_id: u64, space: u64) -> bool {
         //TODO logging

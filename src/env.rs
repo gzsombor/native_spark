@@ -13,16 +13,19 @@ pub struct Env {
     pub map_output_tracker: MapOutputTracker,
     pub shuffle_manager: ShuffleManager,
     pub shuffle_fetcher: ShuffleFetcher,
+    the_cache: BoundedMemoryCache,
     pub cache_tracker: CacheTracker,
 }
 
 impl Env {
-    pub fn new(master_addr: SocketAddr) -> Self {
+    pub fn new(is_master_process: bool, master_addr: SocketAddr) -> Self {
+        let cache = BoundedMemoryCache::new();
         Env {
-            map_output_tracker: MapOutputTracker::new(*is_master, master_addr),
+            map_output_tracker: MapOutputTracker::new(is_master_process, master_addr),
             shuffle_manager: ShuffleManager::new(),
             shuffle_fetcher: ShuffleFetcher,
-            cache_tracker: CacheTracker::new(*is_master, master_addr, &the_cache),
+            the_cache: cache,
+            cache_tracker: CacheTracker::new(is_master_process, master_addr, cache.get_capacity()),
         }
     }
 }
@@ -37,9 +40,8 @@ lazy_static! {
             _ => true,
         }
     };
-    pub static ref the_cache: BoundedMemoryCache = { BoundedMemoryCache::new() };
     pub static ref hosts: Hosts = Hosts::load().unwrap();
-    pub static ref env: Env = Env::new(hosts.master);
+    pub static ref env: Env = Env::new(*is_master, hosts.master);
 
     pub static ref local_ip: Ipv4Addr = std::env::var("SPARK_LOCAL_IP")
         .expect("You must set the SPARK_LOCAL_IP environment variable")
@@ -47,10 +49,9 @@ lazy_static! {
         .unwrap();
 }
 
-
-impl Default for Env {
+impl <'a> Default for Env {
     fn default() -> Env {
-        Env::new(hosts.master)
+        Env::new(*is_master, hosts.master)
     }
 }
 

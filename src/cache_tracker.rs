@@ -58,15 +58,14 @@ pub struct CacheTracker {
     slave_usage: Arc<RwLock<HashMap<Ipv4Addr, usize>>>,
     registered_rdd_ids: Arc<RwLock<HashSet<usize>>>,
     loading: Arc<RwLock<HashSet<(usize, usize)>>>,
-    cache: KeySpace<'static>,
     master_addr: SocketAddr,
 }
 
-impl CacheTracker {
+impl  CacheTracker {
     pub fn new(
         is_master: bool,
         master_addr: SocketAddr,
-        the_cache: &'static BoundedMemoryCache,
+        cache_capacity: usize,
     ) -> Self {
         let m = CacheTracker {
             is_master,
@@ -75,13 +74,12 @@ impl CacheTracker {
             slave_usage: Arc::new(RwLock::new(HashMap::new())),
             registered_rdd_ids: Arc::new(RwLock::new(HashSet::new())),
             loading: Arc::new(RwLock::new(HashSet::new())),
-            cache: the_cache.new_key_space(),
             master_addr: SocketAddr::new(master_addr.ip(), master_addr.port() + 1),
         };
         m.server();
         m.client(CacheTrackerMessage::SlaveCacheStarted {
             host: *env::local_ip,
-            size: m.cache.get_capacity(),
+            size: cache_capacity,
         });
         m
     }
@@ -323,10 +321,11 @@ impl CacheTracker {
 
     pub fn get_or_compute<T: Data>(
         &self,
+        cache: &KeySpace,
         rdd: Arc<dyn Rdd<T>>,
         split: Box<dyn Split>,
     ) -> Box<dyn Iterator<Item = T>> {
-        if let Some(cached_val) = self.cache.get(rdd.get_rdd_id(), split.get_index()) {
+        if let Some(cached_val) = cache.get(rdd.get_rdd_id(), split.get_index()) {
             let res: Vec<T> = bincode::deserialize(&cached_val).unwrap();
             Box::new(res.into_iter())
         } else {
@@ -335,7 +334,7 @@ impl CacheTracker {
                 let dur = time::Duration::from_millis(1);
                 thread::sleep(dur);
             }
-            if let Some(cached_val) = self.cache.get(rdd.get_rdd_id(), split.get_index()) {
+            if let Some(cached_val) = cache.get(rdd.get_rdd_id(), split.get_index()) {
                 let res: Vec<T> = bincode::deserialize(&cached_val).unwrap();
                 return Box::new(res.into_iter());
             }
@@ -345,8 +344,7 @@ impl CacheTracker {
             let mut lock = self.loading.write();
             res = rdd.compute(split.clone()).unwrap().collect();
             let res_bytes = bincode::serialize(&res).unwrap();
-            let put_response = self
-                .cache
+            let put_response = cache
                 .put(rdd.get_rdd_id(), split.get_index(), res_bytes);
             lock.remove(&key);
 
