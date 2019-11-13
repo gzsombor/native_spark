@@ -46,3 +46,11 @@ lazy_static! {
         .parse()
         .unwrap();
 }
+
+
+impl Default for Env {
+    fn default() -> Env {
+        Env::new(hosts.master)
+    }
+}
+

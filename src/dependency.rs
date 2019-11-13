@@ -211,6 +211,7 @@ impl<K: Data + Eq + Hash, V: Data, C: Data> ShuffleDependencyTrait for ShuffleDe
             //            }
         }
 
+        let env = rdd_base.get_env();
         for (i, bucket) in buckets.into_iter().enumerate() {
             //            let mut file = File::create(file_path.clone()).unwrap();
             //            let mut contents = String::new();
@@ -240,7 +241,7 @@ impl<K: Data + Eq + Hash, V: Data, C: Data> ShuffleDependencyTrait for ShuffleDe
             //            println!("file after {:?}", contents);
             //            println!("written to file {:?}", file_path);
         }
-        env::env.shuffle_manager.get_server_uri()
+        env.shuffle_manager.get_server_uri()
     }
 }
 

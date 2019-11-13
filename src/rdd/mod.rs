@@ -27,6 +27,7 @@ use map_partitions_rdd::MapPartitionsRdd;
 
 use crate::aggregator::Aggregator;
 use crate::context::Context;
+use crate::env::Env;
 use crate::dependency::{
     Dependency, OneToOneDependencyTrait, OneToOneDependencyVals, ShuffleDependency,
     ShuffleDependencyTrait,
@@ -73,6 +74,9 @@ impl RddVals {
 pub trait RddBase: Send + Sync + Serialize + Deserialize {
     fn get_rdd_id(&self) -> usize;
     fn get_context(&self) -> Arc<Context>;
+    fn get_env(&self) -> Arc<Env> {
+        self.get_context().get_env()
+    }
     fn get_dependencies(&self) -> &[Dependency];
     fn preferred_locations(&self, split: Box<dyn Split>) -> Vec<Ipv4Addr> {
         Vec::new()

@@ -1,5 +1,6 @@
 use super::*;
 use crate::io::ReaderConfiguration;
+use crate::env::Env;
 
 use capnp::serialize_packed;
 use simplelog::*;
@@ -72,6 +73,7 @@ pub struct Context {
     scheduler: Schedulers,
     address_map: Vec<(String, u16)>,
     distributed_master: bool,
+    env: Arc<Env>,
 }
 
 impl Drop for Context {
@@ -84,7 +86,7 @@ impl Drop for Context {
 
 impl Context {
     // Sends the binary to all nodes present in hosts.conf and starts them
-    pub fn new(mode: &str) -> Result<Arc<Self>> {
+    pub fn new(mode: &str, env: Arc<Env>) -> Result<Arc<Self>> {
         let next_rdd_id = Arc::new(AtomicUsize::new(0));
         let next_shuffle_id = Arc::new(AtomicUsize::new(0));
         use Schedulers::*;
@@ -181,6 +183,7 @@ impl Context {
                             )),
                             address_map,
                             distributed_master: true,
+                            env,
                         }))
                         //TODO handle if master is in another node than from where the program is executed
                         //                        ::std::process::exit(0);
@@ -197,6 +200,7 @@ impl Context {
                     scheduler,
                     address_map: Vec::new(),
                     distributed_master: false,
+                    env,
                 }))
             }
             _ => {
@@ -207,6 +211,7 @@ impl Context {
                     scheduler,
                     address_map: Vec::new(),
                     distributed_master: false,
+                    env,
                 }))
             }
         }
@@ -324,6 +329,10 @@ impl Context {
             (0..rdd.number_of_splits()).collect(),
             false,
         )
+    }
+
+    pub fn get_env(&self) -> Arc<Env> {
+        self.env.clone()
     }
 }
 
