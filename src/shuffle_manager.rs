@@ -9,6 +9,7 @@ use actix_web::{
 use rand::Rng;
 use std::fs;
 use std::thread;
+use std::net::Ipv4Addr;
 use uuid::Uuid;
 
 // creates directories and files required for storing shuffle data.  It also creates the file server required for serving files via http request
@@ -20,7 +21,7 @@ pub struct ShuffleManager {
 }
 
 impl ShuffleManager {
-    pub fn new() -> Self {
+    pub fn new(local_ip: &Ipv4Addr) -> Self {
         //TODO replace all hardcoded values with environment variables
         let local_dir_root = "/tmp";
         let mut tries = 0;
@@ -53,12 +54,12 @@ impl ShuffleManager {
         let port = 5000 + rand::thread_rng().gen_range(0, 1000);
         let server_uri = format!(
             "http://{}:{}",
-            env::local_ip.clone(),
+            &local_ip,
             port,
             //            local_dir_uuid
         );
         info!("server_uri {:?}", server_uri);
-        let server_address = format!("{}:{}", env::local_ip.clone(), port);
+        let server_address = format!("{}:{}", &local_ip, port);
         info!("server_address {:?}", server_address);
         let relative_path = format!("/spark-local-{}", local_dir_uuid);
         let local_dir_clone = local_dir.clone();

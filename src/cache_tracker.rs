@@ -59,6 +59,7 @@ pub struct CacheTracker {
     registered_rdd_ids: Arc<RwLock<HashSet<usize>>>,
     loading: Arc<RwLock<HashSet<(usize, usize)>>>,
     master_addr: SocketAddr,
+    local_ip: Ipv4Addr,
 }
 
 impl  CacheTracker {
@@ -66,6 +67,7 @@ impl  CacheTracker {
         is_master: bool,
         master_addr: SocketAddr,
         cache_capacity: usize,
+        local_ip: Ipv4Addr,
     ) -> Self {
         let m = CacheTracker {
             is_master,
@@ -75,10 +77,11 @@ impl  CacheTracker {
             registered_rdd_ids: Arc::new(RwLock::new(HashSet::new())),
             loading: Arc::new(RwLock::new(HashSet::new())),
             master_addr: SocketAddr::new(master_addr.ip(), master_addr.port() + 1),
+            local_ip
         };
         m.server();
         m.client(CacheTrackerMessage::SlaveCacheStarted {
-            host: *env::local_ip,
+            host: local_ip,
             size: cache_capacity,
         });
         m
@@ -352,7 +355,7 @@ impl  CacheTracker {
                 self.client(CacheTrackerMessage::AddedToCache {
                     rdd_id: rdd.get_rdd_id(),
                     partition: split.get_index(),
-                    host: *env::local_ip,
+                    host: self.local_ip,
                     size,
                 });
             }

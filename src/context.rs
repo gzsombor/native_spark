@@ -125,7 +125,7 @@ impl Context {
                             .to_os_string()
                             .into_string()
                             .map_err(Error::OsStringToString)?;
-                        for address in &env::hosts.slaves {
+                        for address in &env.hosts.slaves {
                             info!("deploying executor at address {:?}", address);
                             //                            let path = path.split(" ").collect::<Vec<_>>();
                             //                            let path = path.join("\\ ");

@@ -15,18 +15,29 @@ pub struct Env {
     pub shuffle_fetcher: ShuffleFetcher,
     the_cache: BoundedMemoryCache,
     pub cache_tracker: CacheTracker,
+    pub hosts: Hosts,
 }
 
 impl Env {
-    pub fn new(is_master_process: bool, master_addr: SocketAddr) -> Self {
+    pub fn new(is_master_process: bool, host_conf: Hosts, local_ip: Ipv4Addr) -> Self {
         let cache = BoundedMemoryCache::new();
+        let capacity = cache.get_capacity();
+        let master_addr = host_conf.master;
         Env {
             map_output_tracker: MapOutputTracker::new(is_master_process, master_addr),
-            shuffle_manager: ShuffleManager::new(),
+            shuffle_manager: ShuffleManager::new(&local_ip),
             shuffle_fetcher: ShuffleFetcher,
             the_cache: cache,
-            cache_tracker: CacheTracker::new(is_master_process, master_addr, cache.get_capacity()),
+            cache_tracker: CacheTracker::new(is_master_process, master_addr, capacity, local_ip),
+            hosts: host_conf,
         }
+    }
+
+    fn get_local_ip() -> Ipv4Addr {
+        std::env::var("SPARK_LOCAL_IP")
+            .expect("You must set the SPARK_LOCAL_IP environment variable")
+            .parse()
+            .unwrap()
     }
 }
 
@@ -40,18 +51,13 @@ lazy_static! {
             _ => true,
         }
     };
-    pub static ref hosts: Hosts = Hosts::load().unwrap();
-    pub static ref env: Env = Env::new(*is_master, hosts.master);
+    pub static ref env: Env = Env::default();
 
-    pub static ref local_ip: Ipv4Addr = std::env::var("SPARK_LOCAL_IP")
-        .expect("You must set the SPARK_LOCAL_IP environment variable")
-        .parse()
-        .unwrap();
 }
 
 impl <'a> Default for Env {
     fn default() -> Env {
-        Env::new(*is_master, hosts.master)
+        Env::new(*is_master, Hosts::load().unwrap(), Env::get_local_ip())
     }
 }
 
