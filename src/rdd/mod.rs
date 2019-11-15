@@ -48,7 +48,7 @@ pub struct RddVals {
     pub dependencies: Vec<Dependency>,
     should_cache: bool,
     #[serde(skip_serializing, skip_deserializing)]
-    pub context: Arc<Context>,
+    pub context: Option<Arc<Context>>,
 }
 
 impl RddVals {
@@ -57,7 +57,7 @@ impl RddVals {
             id: sc.new_rdd_id(),
             dependencies: Vec::new(),
             should_cache: false,
-            context: sc,
+            context: Some(sc),
         }
     }
 
@@ -67,6 +67,16 @@ impl RddVals {
     }
 }
 
+impl Default for RddVals {
+    fn default() -> Self {
+        RddVals {
+            id: Default::default(),
+            dependencies: Default::default(),
+            should_cache: Default::default(),
+            context: None,
+        }
+    }
+}
 // Due to the lack of HKTs in Rust, it is difficult to have collection of generic data with different types.
 // Required for storing multiple RDDs inside dependencies and other places like Tasks, etc.,
 // Refactored RDD trait into two traits one having RddBase trait which contains only non generic methods which provide information for dependency lists
@@ -642,7 +652,7 @@ where
     }
 
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.clone()
+        self.vals.context.expect("Context expected").clone()
     }
 
     fn get_dependencies(&self) -> &[Dependency] {
@@ -767,7 +777,7 @@ where
     }
 
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.clone()
+        self.vals.context.expect("Context expected").clone()
     }
 
     fn get_dependencies(&self) -> &[Dependency] {

@@ -39,12 +39,12 @@ enum Schedulers {
     Distributed(DistributedScheduler),
 }
 
-impl Default for Schedulers {
-    fn default() -> Schedulers {
-        //        let map_output_tracker = MapOutputTracker::new(true, "".to_string(), 0);
-        Schedulers::Local(LocalScheduler::new(num_cpus::get(), 20, true))
-    }
-}
+//impl Default for Schedulers {
+//    fn default() -> Schedulers {
+//        //        let map_output_tracker = MapOutputTracker::new(true, "".to_string(), 0);
+//        Schedulers::Local(LocalScheduler::new(num_cpus::get(), 20, true))
+//    }
+//}
 
 impl Schedulers {
     pub fn run_job<T: Data, U: Data, F, RT>(
@@ -66,7 +66,7 @@ impl Schedulers {
     }
 }
 
-#[derive(Default)]
+// #[derive(Default)]
 pub struct Context {
     next_rdd_id: Arc<AtomicUsize>,
     next_shuffle_id: Arc<AtomicUsize>,
@@ -180,6 +180,7 @@ impl Context {
                                 true,
                                 Some(address_map.clone()),
                                 10000,
+                                env.clone()
                             )),
                             address_map,
                             distributed_master: true,
@@ -193,7 +194,7 @@ impl Context {
             "local" => {
                 let uuid = Uuid::new_v4().to_string();
                 initialize_loggers(format!("/tmp/master-{}", uuid));
-                let scheduler = Local(LocalScheduler::new(num_cpus::get(), 20, true));
+                let scheduler = Local(LocalScheduler::new(num_cpus::get(), 20, true, env.clone()));
                 Ok(Arc::new(Context {
                     next_rdd_id,
                     next_shuffle_id,
@@ -204,7 +205,7 @@ impl Context {
                 }))
             }
             _ => {
-                let scheduler = Local(LocalScheduler::new(num_cpus::get(), 20, true));
+                let scheduler = Local(LocalScheduler::new(num_cpus::get(), 20, true, env.clone()));
                 Ok(Arc::new(Context {
                     next_rdd_id,
                     next_shuffle_id,

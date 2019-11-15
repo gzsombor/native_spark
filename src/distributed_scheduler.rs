@@ -1,4 +1,5 @@
 use super::*;
+use crate::env::Env;
 
 use capnp::serialize_packed;
 //use chrono::{DateTime, Utc};
@@ -60,6 +61,7 @@ impl DistributedScheduler {
         master: bool,
         servers: Option<Vec<(String, u16)>>,
         port: u16,
+        env: Arc<Env>,
         //        map_output_tracker: MapOutputTracker,
     ) -> Self {
         //        unimplemented!()
@@ -101,7 +103,7 @@ impl DistributedScheduler {
                 Arc::new(Mutex::new(VecDeque::new()))
             },
             port,
-            map_output_tracker: env::env.map_output_tracker.clone(),
+            map_output_tracker: env.map_output_tracker.clone(),
         }
     }
 

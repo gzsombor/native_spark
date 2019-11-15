@@ -1,4 +1,5 @@
 use super::*;
+use crate::env::Env;
 
 use parking_lot::Mutex;
 use std::any::Any;
@@ -48,6 +49,7 @@ impl LocalScheduler {
         threads: usize,
         max_failures: usize,
         master: bool,
+        env: Arc<Env>
         //        map_output_tracker: MapOutputTracker,
     ) -> Self {
         //        unimplemented!()
@@ -74,7 +76,7 @@ impl LocalScheduler {
             taskid_to_slaveid: HashMap::new(),
             job_tasks: HashMap::new(),
             slaves_with_executors: HashSet::new(),
-            map_output_tracker: env::env.map_output_tracker.clone(),
+            map_output_tracker: env.map_output_tracker.clone(),
         }
         //        l.update_cache_locs();
     }

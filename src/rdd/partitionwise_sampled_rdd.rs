@@ -65,7 +65,7 @@ where
     }
 
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.clone()
+        self.vals.context.expect("Context expected").clone()
     }
 
     fn get_dependencies(&self) -> &[Dependency] {

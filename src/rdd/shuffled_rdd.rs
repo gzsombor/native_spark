@@ -62,7 +62,7 @@ where
         part: Box<dyn Partitioner>,
     ) -> Self {
         let mut vals = RddVals::new(parent.get_context());
-        let shuffle_id = vals.context.new_shuffle_id();
+        let shuffle_id = vals.context.expect("Context expected").new_shuffle_id();
 
         vals.dependencies
             .push(Dependency::ShuffleDependency(Arc::new(
@@ -93,7 +93,7 @@ where
         self.vals.id
     }
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.clone()
+        self.vals.context.expect("Context expected").clone()
     }
     fn get_dependencies(&self) -> &[Dependency] {
         &self.vals.dependencies
@@ -169,7 +169,7 @@ where
         let start = Instant::now();
         let fetcher = ShuffleFetcher;
         fetcher.fetch(
-            self.vals.context.clone(),
+            self.vals.context.expect("Context expected").clone(),
             self.shuffle_id,
             split.get_index(),
             merge_pair,
