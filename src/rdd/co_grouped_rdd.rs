@@ -134,7 +134,7 @@ impl<K: Data + Eq + Hash> RddBase for CoGroupedRdd<K> {
         self.vals.id
     }
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.clone()
+        self.vals.context.clone().expect("Context expected")
     }
     fn get_dependencies(&self) -> &[Dependency] {
         &self.vals.dependencies
@@ -233,7 +233,7 @@ impl<K: Data + Eq + Hash> Rdd<(K, Vec<Vec<Box<dyn AnyData>>>)> for CoGroupedRdd<
                         let fetcher = ShuffleFetcher;
 
                         fetcher.fetch(
-                            self.vals.context.clone(),
+                            self.vals.context.clone().expect("Context expected"),
                             shuffle_id,
                             split.get_index(),
                             merge_pair,

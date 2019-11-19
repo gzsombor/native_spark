@@ -65,6 +65,11 @@ impl RddVals {
         self.should_cache = true;
         self
     }
+
+    fn set_context(mut self, context: Arc<Context>) -> Self {
+        self.context = Some(context);
+        self
+    }
 }
 
 impl Default for RddVals {
@@ -652,7 +657,7 @@ where
     }
 
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.expect("Context expected").clone()
+        self.vals.context.clone().expect("Context expected")
     }
 
     fn get_dependencies(&self) -> &[Dependency] {
@@ -777,7 +782,7 @@ where
     }
 
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.expect("Context expected").clone()
+        self.vals.context.clone().expect("Context expected")
     }
 
     fn get_dependencies(&self) -> &[Dependency] {

@@ -242,7 +242,7 @@ where
         self.vals.id
     }
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.expect("Context expected").clone()
+        self.vals.context.clone().expect("Context expected")
     }
     fn get_dependencies(&self) -> &[Dependency] {
         &self.vals.dependencies
@@ -359,7 +359,7 @@ where
         self.vals.id
     }
     fn get_context(&self) -> Arc<Context> {
-        self.vals.context.expect("Context expected").clone()
+        self.vals.context.clone().expect("Context expected")
     }
     fn get_dependencies(&self) -> &[Dependency] {
         &self.vals.dependencies

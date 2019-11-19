@@ -59,8 +59,6 @@ impl<T: Data> ParallelCollectionSplit<T> {
 #[derive(Serialize, Deserialize)]
 pub struct ParallelCollectionVals<T> {
     vals: Arc<RddVals>,
-    #[serde(skip_serializing, skip_deserializing)]
-    context: Arc<Context>,
     //    data: Option<Vec<T>>,
     splits_: Vec<Arc<Vec<T>>>,
     num_slices: usize,
@@ -84,7 +82,6 @@ impl<T: Data> ParallelCollection<T> {
         ParallelCollection {
             rdd_vals: Arc::new(ParallelCollectionVals {
                 vals: Arc::new(RddVals::new(context.clone())),
-                context,
                 splits_: ParallelCollection::slice(data, num_slices),
                 num_slices,
             }),
@@ -98,7 +95,6 @@ impl<T: Data> ParallelCollection<T> {
         let splits_ = data.slice();
         let rdd_vals = ParallelCollectionVals {
             vals: Arc::new(RddVals::new(context.clone())),
-            context,
             num_slices: splits_.len(),
             splits_,
         };
@@ -160,7 +156,7 @@ impl<T: Data> RddBase for ParallelCollection<T> {
         self.rdd_vals.vals.id
     }
     fn get_context(&self) -> Arc<Context> {
-        self.rdd_vals.vals.context.clone()
+        self.rdd_vals.vals.context.clone().expect("Context expected")
     }
     fn get_dependencies(&self) -> &[Dependency] {
         &self.rdd_vals.vals.dependencies
