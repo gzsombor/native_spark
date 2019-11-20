@@ -86,7 +86,7 @@ impl Drop for Context {
 
 impl Context {
     // Sends the binary to all nodes present in hosts.conf and starts them
-    pub fn new(mode: &str, env: Arc<Env>) -> Result<Arc<Self>> {
+    pub fn new_with_env(mode: &str, env: Arc<Env>) -> Result<Arc<Self>> {
         let next_rdd_id = Arc::new(AtomicUsize::new(0));
         let next_shuffle_id = Arc::new(AtomicUsize::new(0));
         use Schedulers::*;
@@ -217,6 +217,11 @@ impl Context {
             }
         }
     }
+
+    pub fn new(mode: &str) -> Result<Arc<Self>> {
+        Context::new_with_env(&mode, env::default_env.clone())
+    }
+
     fn drop_executors(&self) {
         for (address, port) in self.address_map.clone() {
             info!("dropping executor in {:?}:{:?}", address, port);

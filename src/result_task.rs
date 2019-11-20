@@ -132,7 +132,7 @@ where
     fn generation(&self) -> Option<i64> {
         let base = self.rdd.get_rdd_base();
         let context = base.get_context();
-        Some(env::env.map_output_tracker.get_generation())
+        Some(self.rdd.get_env().map_output_tracker.get_generation())
     }
 }
 

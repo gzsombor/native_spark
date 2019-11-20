@@ -25,7 +25,7 @@ use std::time::{Duration, Instant};
 use threadpool::ThreadPool;
 
 //just for now, creating an entire scheduler functions without dag scheduler trait. Later change it to extend from dag scheduler
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct DistributedScheduler {
     threads: usize,
     max_failures: usize,
@@ -51,7 +51,7 @@ pub struct DistributedScheduler {
     slaves_with_executors: HashSet<String>,
     server_uris: Arc<Mutex<VecDeque<(String, u16)>>>,
     port: u16,
-    map_output_tracker: MapOutputTracker,
+    env: Arc<Env>,
 }
 
 impl DistributedScheduler {
@@ -103,7 +103,7 @@ impl DistributedScheduler {
                 Arc::new(Mutex::new(VecDeque::new()))
             },
             port,
-            map_output_tracker: env.map_output_tracker.clone(),
+            env: env,
         }
     }
 
@@ -119,7 +119,7 @@ impl DistributedScheduler {
 
     fn update_cache_locs(&self) {
         let mut locs = self.cache_locs.lock();
-        *locs = env::env.cache_tracker.get_location_snapshot();
+        *locs = self.env.cache_tracker.get_location_snapshot();
     }
 
     fn task_ended(
@@ -169,12 +169,12 @@ impl DistributedScheduler {
         shuffle_dependency: Option<Arc<dyn ShuffleDependencyTrait>>,
     ) -> Stage {
         info!("inside new stage");
-        env::env
+        self.env
             .cache_tracker
             .register_rdd(rdd_base.get_rdd_id(), rdd_base.number_of_splits());
         if let Some(shuffle_dependency) = shuffle_dependency.clone() {
             info!("shuffle dependcy and registering mapoutput tracker");
-            self.map_output_tracker.register_shuffle(
+            self.env.map_output_tracker.register_shuffle(
                 shuffle_dependency.get_shuffle_id(),
                 rdd_base.number_of_splits(),
             );
@@ -209,7 +209,7 @@ impl DistributedScheduler {
         );
         if !visited.contains(&rdd) {
             visited.insert(rdd.clone());
-            env::env
+            self.env
                 .cache_tracker
                 .register_rdd(rdd.get_rdd_id(), rdd.number_of_splits());
             for dep in rdd.get_dependencies() {
@@ -319,7 +319,7 @@ impl DistributedScheduler {
     {
         info!(
             "shuffle maanger in final rdd of run job {:?}",
-            env::env.shuffle_manager
+            self.env.shuffle_manager
         );
         let thread_pool = Arc::new(ThreadPool::new(self.threads));
         let run_id = self.next_run_id.fetch_add(1, Ordering::SeqCst);
@@ -484,7 +484,7 @@ impl DistributedScheduler {
                                         stage.clone().shuffle_dependency.unwrap().get_shuffle_id(),
                                         locs
                                     );
-                                    self.map_output_tracker.register_map_outputs(
+                                    self.env.map_output_tracker.register_map_outputs(
                                         stage.shuffle_dependency.unwrap().get_shuffle_id(),
                                         locs,
                                     );
@@ -550,7 +550,7 @@ impl DistributedScheduler {
                             .get_mut(&shuffle_id)
                             .unwrap()
                             .remove_output_loc(map_id, server_uri.clone());
-                        self.map_output_tracker.unregister_map_output(
+                        self.env.map_output_tracker.unregister_map_output(
                             shuffle_id,
                             map_id,
                             server_uri.clone(),

@@ -24,7 +24,7 @@ impl ShuffleFetcher {
         let parallel_fetches = 10; //TDOD  make this as env variable
         let thread_pool = ThreadPool::new(parallel_fetches);
         let mut inputs_by_uri = HashMap::new();
-        let server_uris = env::env
+        let server_uris = sc.get_env()
             .map_output_tracker
             //            .lock()
             //            .expect("problem in getting lock for mapoutput tracker")

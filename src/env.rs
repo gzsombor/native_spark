@@ -44,14 +44,14 @@ impl Env {
 lazy_static! {
     pub static ref shuffle_cache: Arc<RwLock<HashMap<(usize, usize, usize), Vec<u8>>>> = Arc::new(RwLock::new(HashMap::new()));
     // Too lazy to choose a proper logger. Currently using a static log file to log the whole process. Just a crude version of logger.
-    pub static ref is_master: bool = {
+    static ref is_master: bool = {
         let args = std::env::args().skip(1).collect::<Vec<_>>();
         match args.get(0).as_ref().map(|arg| &arg[..]) {
             Some("slave") => false,
             _ => true,
         }
     };
-    pub static ref env: Env = Env::default();
+    pub static ref default_env: Arc<Env> = Arc::new(Env::default());
 
 }
 
