@@ -55,7 +55,7 @@ lazy_static! {
 
 }
 
-impl <'a> Default for Env {
+impl Default for Env {
     fn default() -> Env {
         Env::new(*is_master, Hosts::load().unwrap(), Env::get_local_ip())
     }

@@ -39,13 +39,6 @@ enum Schedulers {
     Distributed(DistributedScheduler),
 }
 
-//impl Default for Schedulers {
-//    fn default() -> Schedulers {
-//        //        let map_output_tracker = MapOutputTracker::new(true, "".to_string(), 0);
-//        Schedulers::Local(LocalScheduler::new(num_cpus::get(), 20, true))
-//    }
-//}
-
 impl Schedulers {
     pub fn run_job<T: Data, U: Data, F, RT>(
         &self,
@@ -66,7 +59,6 @@ impl Schedulers {
     }
 }
 
-// #[derive(Default)]
 pub struct Context {
     next_rdd_id: Arc<AtomicUsize>,
     next_shuffle_id: Arc<AtomicUsize>,
